@@ -2,10 +2,8 @@ import { defineStore } from "pinia";
 
 export const useTaskStore = defineStore('taskStore', {
     state: () =>({
-        tasks: [
-            {id: 1, title: "buy some milk", isFav: false},
-            {id: 2, title: "play Gloomhaven", isFav: true},
-        ],
+        tasks: [],
+        loading: false,
     }),
     getters: {
         favs() {
@@ -18,6 +16,72 @@ export const useTaskStore = defineStore('taskStore', {
         },
         totalCount: (state) => {
             return state.tasks.length;
+        }
+    },
+    actions: {
+        async getTasks(){
+
+            this.loading = true;
+
+            const res = await fetch('http://localhost:3000/tasks');
+            const data = await res.json();
+            
+            this.tasks = data;
+
+            this.loading = false;
+        },
+        async addTask(task){
+            this.loading = true;
+
+            this.tasks.push(task);
+
+            const res = await fetch('http://localhost:3000/tasks', {
+                method: 'POST',
+                body: JSON.stringify(task),
+                headers: {'Content-Type': 'application/json'}
+            });
+
+            this.loading = false;
+
+            if(res.error){
+                console.log(res.error)
+            }
+        },
+        async deleteTask(id){
+            this.loading = true;
+
+            this.tasks = this.tasks.filter(t => {
+                return t.id !== id;
+            })
+
+            const res = await fetch('http://localhost:3000/tasks/' + id, {
+                method: 'DELETE'
+            });
+
+            this.loading = false;
+
+            if(res.error){
+                console.log(res.error)
+            }
+        }, 
+        async toggleFav(id){
+            this.loading = true;
+
+            const task = this.tasks.find(t => t.id === id)
+            task.isFav = !task.isFav;
+            
+            const res = await fetch('http://localhost:3000/tasks/' + id, {
+                method: 'PATCH',
+                body: JSON.stringify({ isFav: task.isFav }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            this.loading = false;
+
+            if(res.error){
+                console.log(res.error)
+            }
+
         }
     }
     
